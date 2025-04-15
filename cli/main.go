@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"slices"
+	"sort"
 	"time"
 
 	"github.com/pterm/pterm"
@@ -66,31 +68,72 @@ func main() {
 				},
 			},
 			{
-				Name:     "list",
-				Aliases:  []string{"l"},
-				Usage:    "List all time entries",
+				Name:    "list",
+				Aliases: []string{"l"},
+				Usage:   "List all time entries",
+				Flags: []cli.Flag{
+					&cli.TimestampFlag{
+						Name:  "from",
+						Usage: "From date",
+						Config: cli.TimestampConfig{
+							Timezone: time.Local,
+							Layouts:  []string{"2006-01-02"},
+						},
+					},
+					&cli.TimestampFlag{
+						Name:  "to",
+						Usage: "To date",
+						Config: cli.TimestampConfig{
+							Timezone: time.Local,
+							Layouts:  []string{"2006-01-02"},
+						},
+					},
+					&cli.BoolFlag{
+						Name:  "today",
+						Usage: "Show time entries for today",
+					},
+				},
 				Category: "reporting",
 				Action: func(ctx context.Context, cmd *cli.Command) error {
 					store := s.NewStore()
 					defer store.Close()
 
 					entries := store.GetTimeEntries()
+					sort.Slice(entries, func(i, j int) bool {
+						return entries[i].Start.Before(entries[j].Start)
+					})
+
+					if slices.Contains(cmd.FlagNames(), "from") && slices.Contains(cmd.FlagNames(), "to") {
+						from := cmd.Timestamp("from")
+						to := cmd.Timestamp("to")
+
+						entries = filterEntries(entries, from, to)
+					}
+
+					if cmd.Bool("today") {
+						entries = filterEntries(entries, s.StartOfDay(time.Now()), s.EndOfDay(time.Now()))
+					}
 
 					table := pterm.TableData{
-						{"ID", "Project", "Task", "Start", "End"},
+						{"Project", "Task", "Start", "End", "Duration"},
 					}
 
 					for _, entry := range entries {
+						duration := entry.End.Sub(entry.Start)
 						table = append(table, []string{
-							entry.ID,
 							entry.Project,
 							entry.Task,
-							entry.Start.Format(time.RFC3339),
-							entry.End.Format(time.RFC3339),
+							entry.Start.Format(time.Stamp),
+							entry.End.Format(time.Stamp),
+							fmt.Sprintf("%dh %02dm", int(duration.Hours()), int(duration.Minutes())%60),
 						})
 					}
 
-					pterm.DefaultTable.WithHasHeader().WithData(table).Render()
+					pterm.DefaultTable.
+						WithHasHeader().
+						WithData(table).
+						WithAlternateRowStyle(pterm.NewStyle(pterm.BgBlack, pterm.BgDarkGray)).
+						Render()
 
 					return nil
 				},
@@ -117,41 +160,24 @@ func main() {
 					return nil
 				},
 			},
-			{
-				Name:     "today",
-				Aliases:  []string{"t"},
-				Category: "reporting",
-				Usage:    "Show the time entries for today",
-				Action: func(ctx context.Context, cmd *cli.Command) error {
-					store := s.NewStore()
-					defer store.Close()
-
-					entries := store.GetTimeEntries()
-
-					pterm.Println("Time entries for today:")
-					table := [][]string{
-						{"ID", "Project", "Task", "Start", "End"},
-					}
-
-					for _, entry := range entries {
-						table = append(table, []string{
-							entry.ID,
-							entry.Project,
-							entry.Task,
-							entry.Start.Format(time.RFC3339),
-							entry.End.Format(time.RFC3339),
-						})
-					}
-
-					pterm.DefaultTable.WithHasHeader().WithData(table).Render()
-
-					return nil
-				},
-			},
 		},
 	}
 
 	if err := cmd.Run(context.Background(), os.Args); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func filterEntries(entries []*s.TimeEntry, from, to time.Time) []*s.TimeEntry {
+	filtered := []*s.TimeEntry{}
+
+	toUpper := to.Add(24 * time.Hour)
+
+	for _, entry := range entries {
+		if entry.Start.After(from) && entry.Start.Before(toUpper) {
+			filtered = append(filtered, entry)
+		}
+	}
+
+	return filtered
 }

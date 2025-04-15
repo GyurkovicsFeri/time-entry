@@ -176,10 +176,10 @@ func (s *Store) GetTimeEntryForToday() *TimeEntry {
 	docs, err := s.db.FindAll(
 		query.NewQuery(TimeEntryCollection).
 			Where(query.Field("start").
-				GtEq(startOfDay(time.Now())).
+				GtEq(StartOfDay(time.Now())).
 				And(
 					query.Field("start").
-						LtEq(endOfDay(time.Now())),
+						LtEq(EndOfDay(time.Now())),
 				),
 			),
 	)
@@ -202,10 +202,10 @@ func (s *Store) Close() {
 	}
 }
 
-func startOfDay(t time.Time) time.Time {
+func StartOfDay(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 }
 
-func endOfDay(t time.Time) time.Time {
+func EndOfDay(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 23, 59, 59, 999, t.Location())
 }
