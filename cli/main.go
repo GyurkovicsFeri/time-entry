@@ -51,9 +51,24 @@ func main() {
 				Aliases:  []string{"e", "end"},
 				Usage:    "Stop / end the current time entry",
 				Category: "time-entry",
+				Flags: []cli.Flag{
+					&cli.TimestampFlag{
+						Name:  "end",
+						Usage: "End the time entry at a specific time",
+						Config: cli.TimestampConfig{
+							Timezone: time.Local,
+							Layouts:  []string{"2006-01-02 15:04:05"},
+						},
+					},
+				},
 				Action: func(ctx context.Context, cmd *cli.Command) error {
 					store := s.NewStore()
 					defer store.Close()
+
+					end := time.Now()
+					if slices.Contains(cmd.FlagNames(), "end") {
+						end = cmd.Timestamp("end").Local()
+					}
 
 					current := store.GetCurrentTimeEntry()
 					if current == nil {
@@ -61,7 +76,7 @@ func main() {
 						return nil
 					}
 
-					te.Stop(store, current, time.Now())
+					te.Stop(store, current, end)
 					pterm.Println("Stopped time entry: ", current.Project, current.Task)
 
 					return nil
@@ -92,6 +107,10 @@ func main() {
 						Name:  "today",
 						Usage: "Show time entries for today",
 					},
+					&cli.BoolFlag{
+						Name:  "yesterday",
+						Usage: "Show time entries for yesterday",
+					},
 				},
 				Category: "reporting",
 				Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -112,6 +131,14 @@ func main() {
 
 					if cmd.Bool("today") {
 						entries = filterEntries(entries, s.StartOfDay(time.Now()), s.EndOfDay(time.Now()))
+					}
+
+					if cmd.Bool("yesterday") {
+						pterm.Info.Println("Showing time entries for yesterday")
+						yesterday := time.Now().Add(-24 * time.Hour)
+						pterm.Info.Println("From: ", s.StartOfDay(yesterday))
+						pterm.Info.Println("To: ", s.EndOfDay(yesterday))
+						entries = filterEntries(entries, s.StartOfDay(time.Now().Add(-24*time.Hour)), s.EndOfDay(time.Now().Add(-24*time.Hour)))
 					}
 
 					table := pterm.TableData{
@@ -160,6 +187,28 @@ func main() {
 					return nil
 				},
 			},
+			{
+				Name:     "report",
+				Aliases:  []string{"r"},
+				Usage:    "Generate a report",
+				Category: "reporting",
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					store := s.NewStore()
+					defer store.Close()
+
+					entries := store.GetTimeEntries()
+
+					sort.Slice(entries, func(i, j int) bool {
+						return entries[i].Start.Before(entries[j].Start)
+					})
+
+					for _, entry := range entries {
+						pterm.Println(entry.Project, entry.Task, entry.Start, entry.End)
+					}
+
+					return nil
+				},
+			},
 		},
 	}
 
@@ -171,10 +220,8 @@ func main() {
 func filterEntries(entries []*s.TimeEntry, from, to time.Time) []*s.TimeEntry {
 	filtered := []*s.TimeEntry{}
 
-	toUpper := to.Add(24 * time.Hour)
-
 	for _, entry := range entries {
-		if entry.Start.After(from) && entry.Start.Before(toUpper) {
+		if entry.Start.After(from) && entry.Start.Before(to) {
 			filtered = append(filtered, entry)
 		}
 	}
