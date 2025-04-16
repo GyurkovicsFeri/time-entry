@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	s "gyurkovics.com/time-tracker/lib/store"
+	s "github.com/gyurkovicsferi/time-tracker/lib/store"
 )
 
 func Start(project, task string, store *s.Store) *s.CurrentTimeEntry {

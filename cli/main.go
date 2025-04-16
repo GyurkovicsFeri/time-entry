@@ -9,10 +9,10 @@ import (
 	"sort"
 	"time"
 
+	te "github.com/gyurkovicsferi/time-tracker/lib"
+	s "github.com/gyurkovicsferi/time-tracker/lib/store"
 	"github.com/pterm/pterm"
 	"github.com/urfave/cli/v3"
-	te "gyurkovics.com/time-tracker/lib"
-	s "gyurkovics.com/time-tracker/lib/store"
 )
 
 func main() {
