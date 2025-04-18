@@ -27,13 +27,28 @@ func main() {
 				Usage:     "Start a time entry",
 				ArgsUsage: "<project> <task>",
 				Category:  "time-entry",
+				Flags: []cli.Flag{
+					&cli.TimestampFlag{
+						Name:  "from",
+						Usage: "Start the time entry at a specific time",
+						Config: cli.TimestampConfig{
+							Timezone: time.Local,
+							Layouts:  []string{"2006-01-02 15:04:05"},
+						},
+					},
+				},
 				Action: func(ctx context.Context, cmd *cli.Command) error {
 					store := s.NewStore()
 					defer store.Close()
 
-					te.Start(cmd.Args().First(), cmd.Args().Get(1), store)
-					pterm.Println("Started time entry: ", cmd.Args().First(), cmd.Args().Get(1))
+					from := time.Now()
+					if slices.Contains(cmd.FlagNames(), "from") {
+						from = cmd.Timestamp("from")
+					}
 
+					te.NewCurrentTimeEntry(store, cmd.Args().First(), cmd.Args().Get(1), from)
+
+					pterm.Println("Started time entry: ", cmd.Args().First(), cmd.Args().Get(1))
 					return nil
 				},
 				ShellComplete: func(ctx context.Context, cmd *cli.Command) {
@@ -180,9 +195,22 @@ func main() {
 						return nil
 					}
 
-					pterm.Println("Current time entry: ", current.Project, current.Task)
-					pterm.Println("Started at: ", current.Start.Format(time.RFC3339))
-					pterm.Println("Duration: ", time.Since(current.Start))
+					title := pterm.NewStyle(pterm.Bold, pterm.FgBlue)
+					info := pterm.NewStyle(pterm.FgGray)
+
+					title.Print("Task: ")
+					info.Print(current.Project, ", ", current.Task)
+					pterm.Println()
+
+					title.Print("Started at: ")
+					info.Print(current.Start.Format(time.RFC850))
+					pterm.Println()
+
+					duration := time.Since(current.Start)
+					formattedDuration := fmt.Sprintf("%dh %02dm", int(duration.Hours()), int(duration.Minutes())%60)
+					title.Print("Duration: ")
+					info.Print(formattedDuration)
+					pterm.Println()
 
 					return nil
 				},
