@@ -47,3 +47,11 @@ func Stop(store *s.Store, currentTimeEntry *s.CurrentTimeEntry, end time.Time) *
 
 	return timeEntry
 }
+
+func GetProjects(store *s.Store) []string {
+	return store.GetProjects()
+}
+
+func GetTasks(store *s.Store, project string) []string {
+	return store.GetTasks(project)
+}

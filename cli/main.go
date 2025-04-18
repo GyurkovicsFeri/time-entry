@@ -53,11 +53,21 @@ func main() {
 				},
 				ShellComplete: func(ctx context.Context, cmd *cli.Command) {
 					if cmd.Args().Len() == 0 {
-						fmt.Println("project1")
-						fmt.Println("project2")
+						store := s.NewStore()
+						defer store.Close()
+
+						projects := te.GetProjects(store)
+						for _, project := range projects {
+							fmt.Println(project)
+						}
 					} else if cmd.Args().Len() == 1 {
-						fmt.Println("task1")
-						fmt.Println("task2")
+						store := s.NewStore()
+						defer store.Close()
+
+						tasks := te.GetTasks(store, cmd.Args().First())
+						for _, task := range tasks {
+							fmt.Println(task)
+						}
 					}
 				},
 			},
@@ -187,7 +197,7 @@ func main() {
 				Usage:    "Show the current time entry status",
 				Flags: []cli.Flag{
 					&cli.BoolFlag{
-						Name:  "--raw",
+						Name:  "raw",
 						Usage: "Show raw output. (Without colors)",
 					},
 				},

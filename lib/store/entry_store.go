@@ -209,3 +209,29 @@ func StartOfDay(t time.Time) time.Time {
 func EndOfDay(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 23, 59, 59, 999, t.Location())
 }
+
+func (store *Store) GetProjects() []string {
+	docs, err := store.db.FindAll(query.NewQuery(TimeEntryCollection).Limit(100))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	projects := make([]string, len(docs))
+	for i, doc := range docs {
+		projects[i] = doc.Get("project").(string)
+	}
+	return projects
+}
+
+func (store *Store) GetTasks(project string) []string {
+	docs, err := store.db.FindAll(query.NewQuery(TimeEntryCollection).Where(query.Field("project").Eq(project)).Limit(10))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tasks := make([]string, len(docs))
+	for i, doc := range docs {
+		tasks[i] = doc.Get("task").(string)
+	}
+	return tasks
+}
