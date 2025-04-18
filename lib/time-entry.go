@@ -14,6 +14,7 @@ func Start(project, task string, store *s.Store) *s.CurrentTimeEntry {
 func NewCurrentTimeEntry(store *s.Store, project, task string, start time.Time) *s.CurrentTimeEntry {
 	if store == nil {
 		store = s.NewStore()
+		defer store.Close()
 	}
 
 	current := store.GetCurrentTimeEntry()

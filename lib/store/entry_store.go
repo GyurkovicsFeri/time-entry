@@ -2,7 +2,6 @@ package store
 
 import (
 	"log"
-	"os"
 	"time"
 
 	"github.com/ostafen/clover/v2"
@@ -35,70 +34,14 @@ type Store struct {
 }
 
 func NewStore() *Store {
-	homeDir, err := os.UserHomeDir()
+	db, err := clover.Open(GetDefaultPath())
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	dbPath := homeDir + "/.time-tracker/db"
-	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
-		err = os.MkdirAll(dbPath, 0755)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	db, err := clover.Open(homeDir + "/.time-tracker/db")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	store := &Store{
-		db: db,
-	}
-	store.createTimeEntryCollectionIfNotExists()
-	store.createCurrentTimeEntryCollectionIfNotExists()
+	store := &Store{db: db}
+	store.Migrate()
 	return store
-}
-
-func (s *Store) createTimeEntryCollectionIfNotExists() {
-	hasCollection, err := s.db.HasCollection(TimeEntryCollection)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if !hasCollection {
-		err = s.db.CreateCollection("time-entry")
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	hasIndex, err := s.db.HasIndex(TimeEntryCollection, "project")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if !hasIndex {
-		err = s.db.CreateIndex(TimeEntryCollection, "project")
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-}
-
-func (s *Store) createCurrentTimeEntryCollectionIfNotExists() {
-	hasCollection, err := s.db.HasCollection(CurrentTimeEntryCollection)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if !hasCollection {
-		err = s.db.CreateCollection(CurrentTimeEntryCollection)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
 }
 
 func (s *Store) InsertCurrentTimeEntry(currentTimeEntry *CurrentTimeEntry) string {

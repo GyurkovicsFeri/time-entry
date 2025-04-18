@@ -20,62 +20,9 @@ func main() {
 		Name:                  "time-entry",
 		Usage:                 "Time entry CLI",
 		EnableShellCompletion: true,
+		Suggest:               true,
 		Commands: []*cli.Command{
-			{
-				Name:      "start",
-				Aliases:   []string{"s"},
-				Usage:     "Start a time entry",
-				ArgsUsage: "<project> <task>",
-				Category:  "time-entry",
-				Suggest:   true,
-				Flags: []cli.Flag{
-					&cli.TimestampFlag{
-						Name:  "from",
-						Usage: "Start the time entry at a specific time",
-						Config: cli.TimestampConfig{
-							Timezone: time.Local,
-							Layouts:  []string{"2006-01-02 15:04:05"},
-						},
-					},
-				},
-				Action: func(ctx context.Context, cmd *cli.Command) error {
-					if cmd.Args().Len() != 2 {
-						return fmt.Errorf("project and task are required")
-					}
-
-					store := s.NewStore()
-					defer store.Close()
-
-					from := time.Now()
-					if slices.Contains(cmd.FlagNames(), "from") {
-						from = cmd.Timestamp("from")
-					}
-
-					te.NewCurrentTimeEntry(store, cmd.Args().First(), cmd.Args().Get(1), from)
-
-					pterm.NewStyle(pterm.FgGreen).Println("Started time entry: ", cmd.Args().First(), cmd.Args().Get(1))
-					return nil
-				},
-				ShellComplete: func(ctx context.Context, cmd *cli.Command) {
-					if cmd.Args().Len() == 0 {
-						store := s.NewStore()
-						defer store.Close()
-
-						projects := te.GetProjects(store)
-						for _, project := range projects {
-							fmt.Println(project)
-						}
-					} else if cmd.Args().Len() == 1 {
-						store := s.NewStore()
-						defer store.Close()
-
-						tasks := te.GetTasks(store, cmd.Args().First())
-						for _, task := range tasks {
-							fmt.Println(task)
-						}
-					}
-				},
-			},
+			StartCmd,
 			{
 				Name:     "stop",
 				Aliases:  []string{"e", "end"},
