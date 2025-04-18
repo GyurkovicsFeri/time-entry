@@ -91,35 +91,16 @@ func (s *Store) GetCurrentTimeEntry() *CurrentTimeEntry {
 	return currentTimeEntry
 }
 
-func (s *Store) GetTimeEntries() []*TimeEntry {
-	docs, err := s.db.FindAll(query.NewQuery(TimeEntryCollection))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	timeEntries := make([]*TimeEntry, len(docs))
-	for i, doc := range docs {
-
-		timeEntries[i] = unmarshalTimeEntry(doc)
-	}
-
-	return timeEntries
-}
-
 func (s *Store) GetTimeEntriesQuery(queryDecorator func(*query.Query) *query.Query) []*TimeEntry {
-	query := query.NewQuery(TimeEntryCollection)
-	if queryDecorator != nil {
-		query = queryDecorator(query)
-	}
-
-	docs, err := s.db.FindAll(query)
+	docs, err := s.db.FindAll(
+		queryDecorator(query.NewQuery(TimeEntryCollection)),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	timeEntries := make([]*TimeEntry, len(docs))
 	for i, doc := range docs {
-
 		timeEntries[i] = unmarshalTimeEntry(doc)
 	}
 
