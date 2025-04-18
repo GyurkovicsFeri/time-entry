@@ -27,6 +27,7 @@ func main() {
 				Usage:     "Start a time entry",
 				ArgsUsage: "<project> <task>",
 				Category:  "time-entry",
+				Suggest:   true,
 				Flags: []cli.Flag{
 					&cli.TimestampFlag{
 						Name:  "from",
@@ -38,6 +39,10 @@ func main() {
 					},
 				},
 				Action: func(ctx context.Context, cmd *cli.Command) error {
+					if cmd.Args().Len() != 2 {
+						return fmt.Errorf("project and task are required")
+					}
+
 					store := s.NewStore()
 					defer store.Close()
 
