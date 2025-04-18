@@ -16,8 +16,9 @@ import (
 )
 
 var EditCmd = &cli.Command{
-	Name:  "edit",
-	Usage: "Edit a time entry",
+	Name:     "edit",
+	Usage:    "Edit a time entry",
+	Category: "time-entry",
 	Action: func(ctx context.Context, cmd *cli.Command) error {
 		db := store.NewStore()
 		defer db.Close()

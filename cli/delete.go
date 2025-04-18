@@ -13,6 +13,7 @@ var DeleteCmd = &cli.Command{
 	Name:      "delete",
 	Usage:     "Delete a time entry",
 	ArgsUsage: "[id]",
+	Category:  "time-entry",
 	Flags: []cli.Flag{
 		&cli.BoolFlag{
 			Name:  "last",
