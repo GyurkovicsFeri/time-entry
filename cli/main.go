@@ -48,7 +48,7 @@ func main() {
 
 					te.NewCurrentTimeEntry(store, cmd.Args().First(), cmd.Args().Get(1), from)
 
-					pterm.Println("Started time entry: ", cmd.Args().First(), cmd.Args().Get(1))
+					pterm.NewStyle(pterm.FgGreen).Println("Started time entry: ", cmd.Args().First(), cmd.Args().Get(1))
 					return nil
 				},
 				ShellComplete: func(ctx context.Context, cmd *cli.Command) {
@@ -185,6 +185,12 @@ func main() {
 				Aliases:  []string{"st"},
 				Category: "reporting",
 				Usage:    "Show the current time entry status",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "--raw",
+						Usage: "Show raw output. (Without colors)",
+					},
+				},
 				Action: func(ctx context.Context, cmd *cli.Command) error {
 					store := s.NewStore()
 					defer store.Close()
@@ -192,6 +198,11 @@ func main() {
 					current := store.GetCurrentTimeEntry()
 					if current == nil {
 						pterm.Println("No time entry to stop")
+						return nil
+					}
+
+					if cmd.Bool("raw") {
+						pterm.Println(current.Project, current.Task)
 						return nil
 					}
 
