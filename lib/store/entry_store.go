@@ -106,6 +106,26 @@ func (s *Store) GetTimeEntries() []*TimeEntry {
 	return timeEntries
 }
 
+func (s *Store) GetTimeEntriesQuery(queryDecorator func(*query.Query) *query.Query) []*TimeEntry {
+	query := query.NewQuery(TimeEntryCollection)
+	if queryDecorator != nil {
+		query = queryDecorator(query)
+	}
+
+	docs, err := s.db.FindAll(query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	timeEntries := make([]*TimeEntry, len(docs))
+	for i, doc := range docs {
+
+		timeEntries[i] = unmarshalTimeEntry(doc)
+	}
+
+	return timeEntries
+}
+
 func unmarshalTimeEntry(doc *document.Document) *TimeEntry {
 	timeEntry := &TimeEntry{}
 	err := doc.Unmarshal(timeEntry)
@@ -177,4 +197,19 @@ func (store *Store) GetTasks(project string) []string {
 		tasks[i] = doc.Get("task").(string)
 	}
 	return tasks
+}
+
+func (s *Store) UpdateTimeEntry(timeEntry *TimeEntry) {
+	doc := document.NewDocumentOf(timeEntry)
+	err := s.db.Update(query.NewQuery(TimeEntryCollection).Where(query.Field("id").Eq(timeEntry.ID)), doc.AsMap())
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (s *Store) DeleteTimeEntry(id string) {
+	err := s.db.Delete(query.NewQuery(TimeEntryCollection).Where(query.Field("id").Eq(id)))
+	if err != nil {
+		log.Fatal(err)
+	}
 }
