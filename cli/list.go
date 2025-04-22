@@ -40,6 +40,10 @@ var ListCmd = &cli.Command{
 			Name:  "yesterday",
 			Usage: "Show time entries for yesterday",
 		},
+		&cli.BoolFlag{
+			Name:  "id",
+			Usage: "Show the id of the time entries",
+		},
 	},
 	Category: "reporting",
 	Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -49,34 +53,48 @@ var ListCmd = &cli.Command{
 		entries := store.GetTimeEntriesQuery(func(q *query.Query) *query.Query {
 			if HasFlag(cmd, "from") {
 				from := cmd.Timestamp("from")
-				q.Where(query.Field("start").GtEq(from))
+				return q.Where(query.Field("start").GtEq(from))
 			}
 			if HasFlag(cmd, "to") {
 				to := cmd.Timestamp("to")
-				q.Where(query.Field("start").LtEq(to))
+				return q.Where(query.Field("start").LtEq(to))
 			}
 			if cmd.Bool("today") {
-				q.Where(query.Field("start").GtEq(s.StartOfDay(time.Now()))).Where(query.Field("start").LtEq(s.EndOfDay(time.Now())))
+				return q.Where(query.Field("start").
+					GtEq(s.StartOfDay(time.Now())).
+					And(query.Field("start").
+						LtEq(s.EndOfDay(time.Now()))))
 			}
 			if cmd.Bool("yesterday") {
-				q.Where(query.Field("start").GtEq(s.StartOfDay(time.Now().Add(-24 * time.Hour)))).Where(query.Field("start").LtEq(s.EndOfDay(time.Now().Add(-24 * time.Hour))))
+				return q.Where(query.Field("start").GtEq(s.StartOfDay(time.Now().Add(-24 * time.Hour)))).Where(query.Field("start").LtEq(s.EndOfDay(time.Now().Add(-24 * time.Hour))))
 			}
 			return q
 		})
 
-		table := pterm.TableData{
-			{"Project", "Task", "Start", "End", "Duration"},
+		showId := cmd.Bool("id")
+		headers := []string{"Project", "Task", "Start", "End", "Duration"}
+
+		if showId {
+			headers = append([]string{"ID"}, headers...)
 		}
 
+		table := pterm.TableData{headers}
 		for _, entry := range entries {
 			duration := entry.End.Sub(entry.Start)
-			table = append(table, []string{
+
+			row := []string{
 				entry.Project,
 				entry.Task,
 				entry.Start.Format(time.Stamp),
 				entry.End.Format(time.Stamp),
 				fmt.Sprintf("%dh %02dm", int(duration.Hours()), int(duration.Minutes())%60),
-			})
+			}
+
+			if showId {
+				row = append([]string{entry.ID}, row...)
+			}
+
+			table = append(table, row)
 		}
 
 		pterm.DefaultTable.
