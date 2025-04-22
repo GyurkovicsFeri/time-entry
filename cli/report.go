@@ -30,6 +30,11 @@ var ReportCmd = &cli.Command{
 			Aliases: []string{"lw"},
 			Usage:   "Show report for last week",
 		},
+		&cli.BoolFlag{
+			Name:    "today",
+			Aliases: []string{"td"},
+			Usage:   "Show report for today",
+		},
 		&cli.StringFlag{
 			Name:    "project",
 			Aliases: []string{"p"},
@@ -59,6 +64,11 @@ var ReportCmd = &cli.Command{
 			startDate = now.AddDate(0, 0, -weekday-7+1).Truncate(24 * time.Hour)
 			endDate = startDate.AddDate(0, 0, 7).Add(-time.Nanosecond)
 			periodStr = "Last Week"
+		} else if cmd.Bool("today") {
+			// Today
+			startDate = s.StartOfDay(time.Now())
+			endDate = s.EndOfDay(time.Now())
+			periodStr = "Today"
 		} else {
 			// This week (default)
 			now := time.Now()
@@ -121,20 +131,6 @@ var ReportCmd = &cli.Command{
 		// Display summary box
 		summaryBox := displaySummaryBox(entries, totalDuration, startDate, endDate)
 
-		// Total hours
-		content := "Total hours: " + formatDuration(totalDuration)
-		workingDays := countWorkingDays(startDate, endDate)
-		if workingDays > 0 {
-			avgHoursPerWorkDay := totalDuration.Hours() / float64(workingDays)
-			content += "\nAverage hours per working day: " + fmt.Sprintf("%.1fh", avgHoursPerWorkDay)
-		}
-
-		// Display total hours
-		totalHours := pterm.DefaultBox.
-			WithTitle("Total Hours").
-			WithTitleTopCenter(true).
-			Sprint(content)
-
 		// Display hours by day with progress bars
 		hoursByDayChart := displayHoursByDay(hoursByDay, totalDuration)
 
@@ -146,11 +142,23 @@ var ReportCmd = &cli.Command{
 
 		// Display time entries by project
 		entriesByProjectChart := displayEntriesByProject(entriesByProject)
-		pterm.DefaultPanel.WithPanels(pterm.Panels{
-			{{Data: summaryBox}, {Data: totalHours}, {Data: hoursByProjectChart}},
-			{{Data: hoursByDayChart}, {Data: entriesByDayChart}},
-			{{Data: entriesByProjectChart}},
-		}).Render()
+
+		panels := pterm.Panels{
+			{{Data: summaryBox}, {Data: hoursByProjectChart}},
+		}
+
+		if cmd.Bool("today") {
+			panels = append(panels, []pterm.Panel{
+				{Data: entriesByProjectChart},
+			})
+		} else {
+			panels = append(panels, []pterm.Panel{
+				{Data: hoursByDayChart}, {Data: entriesByDayChart},
+				{Data: entriesByProjectChart},
+			})
+		}
+
+		pterm.DefaultPanel.WithPanels(panels).Render()
 
 		return nil
 	},
