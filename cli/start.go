@@ -43,7 +43,7 @@ var StartCmd = &cli.Command{
 
 		timeentry.NewCurrentTimeEntry(store, cmd.Args().First(), cmd.Args().Get(1), from)
 
-		pterm.NewStyle(pterm.FgGreen).Println("Started time entry: ", cmd.Args().First(), cmd.Args().Get(1))
+		pterm.NewStyle(pterm.FgGreen).Println("Started time entry: ", cmd.Args().First(), " - ", cmd.Args().Get(1), " at ", from.Format("15:04:05"))
 		return nil
 	},
 	ShellComplete: func(ctx context.Context, cmd *cli.Command) {
