@@ -66,7 +66,12 @@ var ListCmd = &cli.Command{
 						LtEq(s.EndOfDay(time.Now()))))
 			}
 			if cmd.Bool("yesterday") {
-				return q.Where(query.Field("start").GtEq(s.StartOfDay(time.Now().Add(-24 * time.Hour)))).Where(query.Field("start").LtEq(s.EndOfDay(time.Now().Add(-24 * time.Hour))))
+				yesterday := time.Now().Add(-24 * time.Hour)
+				return q.Where(
+					query.Field("start").
+						GtEq(s.StartOfDay(yesterday)).
+						And(query.Field("start").
+							LtEq(s.EndOfDay(yesterday))))
 			}
 			return q
 		})
