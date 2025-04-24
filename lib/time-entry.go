@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/gyurkovicsferi/time-tracker/lib/db"
 	s "github.com/gyurkovicsferi/time-tracker/lib/store"
 )
 
@@ -13,7 +14,7 @@ func Start(project, task string, store *s.Store) *s.CurrentTimeEntry {
 
 func NewCurrentTimeEntry(store *s.Store, project, task string, start time.Time) *s.CurrentTimeEntry {
 	if store == nil {
-		store = s.NewStore()
+		store = s.NewStore(db.NewDB())
 		defer store.Close()
 	}
 

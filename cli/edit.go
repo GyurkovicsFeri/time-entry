@@ -12,7 +12,8 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/urfave/cli/v3"
 
-	store "github.com/gyurkovicsferi/time-tracker/lib/store"
+	"github.com/gyurkovicsferi/time-tracker/lib/db"
+	libStore "github.com/gyurkovicsferi/time-tracker/lib/store"
 )
 
 var EditCmd = &cli.Command{
@@ -20,10 +21,12 @@ var EditCmd = &cli.Command{
 	Usage:    "Edit a time entry",
 	Category: "time-entry",
 	Action: func(ctx context.Context, cmd *cli.Command) error {
-		db := store.NewStore()
-		defer db.Close()
+		db := db.NewDB()
 
-		entries := db.GetTimeEntriesQuery(func(q *query.Query) *query.Query {
+		store := libStore.NewStore(db)
+		defer store.Close()
+
+		entries := store.GetTimeEntriesQuery(func(q *query.Query) *query.Query {
 			return q.Limit(100).Sort(query.SortOption{
 				Field:     "start",
 				Direction: -1,
@@ -31,7 +34,7 @@ var EditCmd = &cli.Command{
 		})
 
 		entriesString := make([]string, len(entries))
-		entiresByString := make(map[string]*store.TimeEntry)
+		entiresByString := make(map[string]*libStore.TimeEntry)
 		for i, entry := range entries {
 			entriesString[i] = fmt.Sprintf("%s | %s | %s | %s | %s", entry.ID, entry.Project, entry.Task, entry.Start.Format(time.RFC850), entry.End.Format(time.RFC850))
 			entiresByString[entriesString[i]] = entry
@@ -133,7 +136,7 @@ var EditCmd = &cli.Command{
 			pterm.Println(pterm.LightGreen("End changed from " + pterm.LightRed(oldEnd) + " to " + pterm.LightRed(newEndRaw)))
 		}
 
-		editedEntry := store.TimeEntry{
+		editedEntry := libStore.TimeEntry{
 			ID:      selectedEntry.ID,
 			Project: newProject,
 			Task:    newTask,
@@ -141,13 +144,13 @@ var EditCmd = &cli.Command{
 			End:     newEnd,
 		}
 
-		db.UpdateTimeEntry(&editedEntry)
+		store.UpdateTimeEntry(&editedEntry)
 
 		return nil
 	},
 }
 
-func createTempFileToEdit(entry *store.TimeEntry) (string, error) {
+func createTempFileToEdit(entry *libStore.TimeEntry) (string, error) {
 	tempFile, err := os.CreateTemp("", "time-tracker-entry-*")
 	if err != nil {
 		return "", err

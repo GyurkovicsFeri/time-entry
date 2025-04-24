@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gyurkovicsferi/time-tracker/lib/db"
 	s "github.com/gyurkovicsferi/time-tracker/lib/store"
 	"github.com/ostafen/clover/v2/query"
 	"github.com/pterm/pterm"
@@ -47,7 +48,10 @@ var ReportCmd = &cli.Command{
 		},
 	},
 	Action: func(ctx context.Context, cmd *cli.Command) error {
-		store := s.NewStore()
+		db := db.NewDB()
+		defer db.Close()
+
+		store := s.NewStore(db)
 		defer store.Close()
 
 		// Determine time period based on flags

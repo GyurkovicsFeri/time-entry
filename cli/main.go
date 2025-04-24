@@ -22,6 +22,7 @@ func main() {
 			EditCmd,
 			DeleteCmd,
 			ReportCmd,
+			ClockifyCmd,
 		},
 	}
 

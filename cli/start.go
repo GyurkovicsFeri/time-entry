@@ -9,6 +9,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	timeentry "github.com/gyurkovicsferi/time-tracker/lib"
+	"github.com/gyurkovicsferi/time-tracker/lib/db"
 	store "github.com/gyurkovicsferi/time-tracker/lib/store"
 )
 
@@ -33,7 +34,10 @@ var StartCmd = &cli.Command{
 			return fmt.Errorf("project and task are required")
 		}
 
-		store := store.NewStore()
+		db := db.NewDB()
+		defer db.Close()
+
+		store := store.NewStore(db)
 		defer store.Close()
 
 		from := time.Now()
@@ -48,7 +52,7 @@ var StartCmd = &cli.Command{
 	},
 	ShellComplete: func(ctx context.Context, cmd *cli.Command) {
 		if cmd.Args().Len() == 0 {
-			store := store.NewStore()
+			store := store.NewStore(db.NewDB())
 			defer store.Close()
 
 			projects := store.GetProjects()
@@ -56,7 +60,10 @@ var StartCmd = &cli.Command{
 				fmt.Println(project)
 			}
 		} else if cmd.Args().Len() == 1 {
-			store := store.NewStore()
+			db := db.NewDB()
+			defer db.Close()
+
+			store := store.NewStore(db)
 			defer store.Close()
 
 			tasks := store.GetTasks(cmd.Args().First())

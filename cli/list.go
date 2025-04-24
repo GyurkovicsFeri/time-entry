@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gyurkovicsferi/time-tracker/lib/db"
 	s "github.com/gyurkovicsferi/time-tracker/lib/store"
 	"github.com/ostafen/clover/v2/query"
 	"github.com/pterm/pterm"
@@ -47,7 +48,10 @@ var ListCmd = &cli.Command{
 	},
 	Category: "reporting",
 	Action: func(ctx context.Context, cmd *cli.Command) error {
-		store := s.NewStore()
+		newDB := db.NewDB()
+		defer newDB.Close()
+
+		store := s.NewStore(newDB)
 		defer store.Close()
 
 		entries := store.GetTimeEntriesQuery(func(q *query.Query) *query.Query {

@@ -33,12 +33,7 @@ type Store struct {
 	db *clover.DB
 }
 
-func NewStore() *Store {
-	db, err := clover.Open(GetDefaultPath())
-	if err != nil {
-		log.Fatal(err)
-	}
-
+func NewStore(db *clover.DB) *Store {
 	store := &Store{db: db}
 	store.Migrate()
 	return store

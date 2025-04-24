@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gyurkovicsferi/time-tracker/lib/db"
 	s "github.com/gyurkovicsferi/time-tracker/lib/store"
 	"github.com/pterm/pterm"
 	"github.com/urfave/cli/v3"
@@ -22,7 +23,10 @@ var StatusCmd = &cli.Command{
 		},
 	},
 	Action: func(ctx context.Context, cmd *cli.Command) error {
-		store := s.NewStore()
+		db := db.NewDB()
+		defer db.Close()
+
+		store := s.NewStore(db)
 		defer store.Close()
 
 		current := store.GetCurrentTimeEntry()
