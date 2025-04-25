@@ -81,47 +81,18 @@ var ClockifyCmd = &cli.Command{
 				startOfWeek := startOfWeek(lastWeek)
 				endOfWeek := endOfWeek(lastWeek)
 
-				newDb := db.NewDB()
-				defer newDb.Close()
-
-				store := libStore.NewStore(newDb)
-				defer store.Close()
-
-				timeEntries := store.GetTimeEntriesQuery(func(q *query.Query) *query.Query {
-					return q.Where(query.Field("start").GtEq(startOfWeek).And(query.Field("start").LtEq(endOfWeek)))
-				})
-
-				for _, timeEntry := range timeEntries {
-					pterm.Println(timeEntry.ID)
-				}
-
-				clockifyStore := clockify.NewClockifyStore(newDb)
-				clockifyConfig, err := clockifyStore.GetClockifyConfig()
-				if err != nil {
-					return err
-				}
-
-				for _, timeEntry := range timeEntries {
-					clockifyTimeEntry, err := clockifyStore.GetClockifyTimeEntry(timeEntry)
-					if err != nil {
-						return err
-					}
-					api := clockify.NewClockifyAPI(clockifyConfig.APIKey, clockifyConfig.WorkspaceID)
-					if clockifyTimeEntry != nil {
-						// TODO: update the time entry
-						if clockifyTimeEntry.Deleted {
-							// TODO: delete the time entry
-							pterm.Println("Deleting time entry: " + timeEntry.ID)
-						} else {
-							pterm.Println("Updating time entry: " + timeEntry.ID)
-						}
-					} else {
-						pterm.Println("Creating time entry: " + timeEntry.Project + " " + timeEntry.Task)
-						api.PostNewTimeEntry(timeEntry)
-					}
-				}
-
-				return nil
+				return uploadTimeEntry(startOfWeek, endOfWeek)
+			},
+		},
+		{
+			Name:        "upload-today",
+			Usage:       "upload-today",
+			Description: "Upload time entries to Clockify for today",
+			Action: func(ctx context.Context, cmd *cli.Command) error {
+				now := time.Now()
+				startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+				endOfDay := startOfDay.AddDate(0, 0, 1)
+				return uploadTimeEntry(startOfDay, endOfDay)
 			},
 		},
 	},
@@ -141,4 +112,48 @@ func endOfWeek(t time.Time) time.Time {
 	}
 	year, month, day := t.Year(), t.Month(), t.Day()
 	return time.Date(year, month, day, 23, 59, 59, 0, t.Location())
+}
+
+func uploadTimeEntry(start, end time.Time) error {
+	newDb := db.NewDB()
+	defer newDb.Close()
+
+	store := libStore.NewStore(newDb)
+	defer store.Close()
+
+	timeEntries := store.GetTimeEntriesQuery(func(q *query.Query) *query.Query {
+		return q.Where(query.Field("start").GtEq(start).And(query.Field("start").LtEq(end)))
+	})
+
+	for _, timeEntry := range timeEntries {
+		pterm.Println(timeEntry.ID)
+	}
+
+	clockifyStore := clockify.NewClockifyStore(newDb)
+	clockifyConfig, err := clockifyStore.GetClockifyConfig()
+	if err != nil {
+		return err
+	}
+
+	for _, timeEntry := range timeEntries {
+		clockifyTimeEntry, err := clockifyStore.GetClockifyTimeEntry(timeEntry)
+		if err != nil {
+			return err
+		}
+		api := clockify.NewClockifyAPI(clockifyConfig.APIKey, clockifyConfig.WorkspaceID)
+		if clockifyTimeEntry != nil {
+			// TODO: update the time entry
+			if clockifyTimeEntry.Deleted {
+				// TODO: delete the time entry
+				pterm.Println("Deleting time entry: " + timeEntry.ID)
+			} else {
+				pterm.Println("Updating time entry: " + timeEntry.ID)
+			}
+		} else {
+			pterm.Println("Creating time entry: " + timeEntry.Project + " " + timeEntry.Task)
+			api.PostNewTimeEntry(timeEntry)
+		}
+	}
+
+	return nil
 }
