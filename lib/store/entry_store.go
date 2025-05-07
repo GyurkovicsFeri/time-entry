@@ -149,6 +149,14 @@ func EndOfDay(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 23, 59, 59, 999, t.Location())
 }
 
+func StartOfMinute(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), 0, 0, t.Location())
+}
+
+func EndOfMinute(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), 59, 999, t.Location())
+}
+
 func (store *Store) GetProjects() []string {
 	docs, err := store.db.FindAll(query.NewQuery(TimeEntryCollection).Limit(100))
 	if err != nil {

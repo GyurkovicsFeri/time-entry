@@ -13,9 +13,10 @@ import (
 )
 
 var StopCmd = &cli.Command{
-	Name:    "stop",
-	Aliases: []string{"e", "end"},
-	Usage:   "Stop / end the current time entry",
+	Name:     "stop",
+	Aliases:  []string{"e", "end"},
+	Usage:    "Stop / end the current time entry",
+	Category: "clockify",
 	Flags: []cli.Flag{
 		&cli.TimestampFlag{
 			Name:  "end",
@@ -33,7 +34,7 @@ var StopCmd = &cli.Command{
 		store := s.NewStore(db)
 		defer store.Close()
 
-		end := time.Now()
+		end := s.StartOfMinute(time.Now())
 		if slices.Contains(cmd.FlagNames(), "end") {
 			end = cmd.Timestamp("end").Local()
 		}

@@ -37,15 +37,15 @@ var StartCmd = &cli.Command{
 		db := db.NewDB()
 		defer db.Close()
 
-		store := store.NewStore(db)
-		defer store.Close()
+		s := store.NewStore(db)
+		defer s.Close()
 
-		from := time.Now()
+		from := store.StartOfMinute(time.Now())
 		if HasFlag(cmd, "from") {
 			from = cmd.Timestamp("from")
 		}
 
-		timeentry.NewCurrentTimeEntry(store, cmd.Args().First(), cmd.Args().Get(1), from)
+		timeentry.NewCurrentTimeEntry(s, cmd.Args().First(), cmd.Args().Get(1), from)
 
 		pterm.NewStyle(pterm.FgGreen).Println("Started time entry: ", cmd.Args().First(), " - ", cmd.Args().Get(1), " at ", from.Format("15:04:05"))
 		return nil

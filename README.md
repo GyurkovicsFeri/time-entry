@@ -10,7 +10,9 @@ USAGE:
    time-entry [global options] [command [command options]]
 
 COMMANDS:
-   help, h  Shows a list of commands or help for one command
+   stop, e, end  Stop / end the current time entry
+   clockify      clockify
+   help, h       Shows a list of commands or help for one command
 
    reporting:
      list, l     List all time entries
@@ -18,10 +20,9 @@ COMMANDS:
      report, r   Generate a report
 
    time-entry:
-     start, s      Start a time entry
-     stop, e, end  Stop / end the current time entry
-     edit          Edit a time entry
-     delete        Delete a time entry
+     start, s  Start a time entry
+     edit      Edit a time entry
+     delete    Delete a time entry
 
 GLOBAL OPTIONS:
    --help, -h  show help

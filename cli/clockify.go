@@ -17,6 +17,7 @@ var ClockifyCmd = &cli.Command{
 	Name:        "clockify",
 	Description: "Utilities for interacting with Clockify",
 	Usage:       "clockify",
+	Category:    "Clockify",
 	Commands: []*cli.Command{
 		{
 			Name:           "config",
